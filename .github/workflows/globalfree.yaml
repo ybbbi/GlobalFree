@@ -1,4 +1,4 @@
-name: GLaDOS-CheckIn
+name: globalfree
 on:
   # 可手动触发工作流程
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
   # 定时触发工作流程
   schedule:
     # UTC 1点30分(北京时间 9点30分)
-    - cron: 30 1 * * *
+    - cron: 30 16 * * *
   # 标星时触发工作流程
   watch:
     types: [started]
@@ -35,7 +35,7 @@ jobs:
         # 安装 puppeteer-extra-plugin-stealth 绕过检测
       - name: install puppeteer-extra-plugin-stealth
         run: npm install puppeteer@1.7 puppeteer-extra puppeteer-extra-plugin-stealth
-      - name: CheckIn
+      - name: ci
         run: node globalfree.js
         # 设置环境变量
         env:
