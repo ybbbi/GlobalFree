@@ -33,16 +33,16 @@ jobs:
       - name: -i axios
         run: npm install axios@1.1.3
         # 安装 puppeteer-extra-plugin-stealth 绕过检测
-      - name: install puppeteer-extra-plugin-stealth
+      - name: -i dependencies
         run: npm install puppeteer@18.2.1 puppeteer-extra@3.3.4 puppeteer-extra-plugin-stealth@2.11.1
-      - name: ci
+      - name: run
         run: node globalfree.js
         # 设置环境变量
         env:
           PUSHPLUS: ${{ secrets.PUSHPLUS }}
           COOKIES: ${{ secrets.COOKIES }}
         # 保持 action 活跃
-      - name: keep alive
+      - name: keep alive action
         uses: gautamkrishnar/keepalive-workflow@master # using the workflow with default settings
         # 删除工作流记录
       - name: Delete workflow runs
@@ -51,5 +51,5 @@ jobs:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
           retain_days: 0
-          keep_minimum_runs: 10
+          keep_minimum_runs: 5
           delete_workflow_by_state_pattern: success
