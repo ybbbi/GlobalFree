@@ -13,14 +13,14 @@ on:
       - 'imgs/**'
   # 定时触发工作流程
   schedule:
-    # UTC 1点30分(北京时间 9点30分)
+    # UTC 16点30分(北京时间 0:30)
     - cron: 30 16 * * *
   # 标星时触发工作流程
   watch:
     types: [started]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04.5
     steps:
       # Checks out a copy of your repository on the ubuntu-latest machine
       # 必须，不然到执行 node checkin.js 时会报错
