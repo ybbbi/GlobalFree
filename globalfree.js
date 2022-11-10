@@ -10,7 +10,7 @@ const INFO = {
     checkInMessage: '签到情况',
     checkInFailded: '签到失败',
     getStatusFailed: '获取信息失败',
-    traffic:'已用流量'
+    traffic:'已使用'
 };
 
 const checkCOOKIES = (COOKIES) => {
@@ -128,7 +128,7 @@ const checkInAndGetStatus = async (cookie) => {
             }
             ret[INFO.account] = account;
             ret[INFO.leftDays] = parseInt(leftDays);
-            ret[INFO.traffic] = `${(parseInt(traffic)/1024/1024/1024)}GB`
+            ret[INFO.traffic] = `${(parseInt(traffic)/1024/1024/1024).toFixed(2)}GB`
         }
 
         return ret;
