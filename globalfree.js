@@ -9,7 +9,8 @@ const INFO = {
     leftDays: '天数',
     checkInMessage: '签到情况',
     checkInFailded: '签到失败',
-    getStatusFailed: '获取信息失败'
+    getStatusFailed: '获取信息失败',
+    traffic:'已用流量'
 };
 
 const checkCOOKIES = (COOKIES) => {
@@ -114,7 +115,7 @@ const checkInAndGetStatus = async (cookie) => {
             ret[INFO.getStatusFailed] = reason;
         } else {
             console.info('getStatus 请求成功。');
-            const { data: { email, phone, leftDays } = {} } = await statusRes.json();
+            const { data: { email, phone, leftDays , traffic } = {} } = await statusRes.json();
             let account = '未知账号';
             if (email) {
                 account = email.replace(/^(.)(.*)(.@.*)$/,
@@ -127,6 +128,7 @@ const checkInAndGetStatus = async (cookie) => {
             }
             ret[INFO.account] = account;
             ret[INFO.leftDays] = parseInt(leftDays);
+            ret[INFO.traffic] = `${(parseInt(traffic)/1024/1024/1024)}GB`
         }
 
         return ret;
