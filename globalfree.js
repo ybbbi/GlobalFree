@@ -128,7 +128,7 @@ const checkInAndGetStatus = async (cookie) => {
             }
             ret[INFO.account] = account;
             ret[INFO.leftDays] = parseInt(leftDays);
-            ret[INFO.traffic] = `${(parseInt(traffic)/1024/1024/1024).toFixed(2)}GB`
+            ret[INFO.traffic] = `${(parseInt(traffic)/1024/1024/1024).toFixed(2)} GB`
         }
 
         return ret;
