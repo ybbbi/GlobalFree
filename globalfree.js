@@ -184,8 +184,9 @@ const GLaDOSCheckIn = async () => {
             }
 
             if (PUSHPLUS && infos.length) {
-                const pushResult = (await pushplus(PUSHPLUS, infos))?.data?.msg;
-                console.log('PUSHPLUS pushResult', pushResult);
+                //canceled send
+                //const pushResult = (await pushplus(PUSHPLUS, infos))?.data?.msg;
+                //console.log('PUSHPLUS pushResult', pushResult);
             }
         }
     } catch (error) {
