@@ -20,7 +20,7 @@ on:
     types: [started]
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       # Checks out a copy of your repository on the ubuntu-latest machine
       # 必须，不然到执行 node checkin.js 时会报错
