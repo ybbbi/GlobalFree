@@ -43,7 +43,7 @@ jobs:
           COOKIES: ${{ secrets.COOKIES }}
         # 保持 action 活跃
       - name: keep alive action
-        uses: gautamkrishnar/keepalive-workflow@master # using the workflow with default settings
+        uses: efrecon/gh-action-keepalive@main # using the workflow with default settings
         # 删除工作流记录
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
