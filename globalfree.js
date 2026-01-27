@@ -62,7 +62,7 @@ const checkInAndGetStatus = async (cookie) => {
     const cookieJSON = rawCookie2JSON(cookie);
     await page.setCookie(...cookieJSON);
 
-    await page.goto('https://glados.cloud/console', {
+    await page.goto('https://glados.cloud/console/checkin', {
         timeout: 0,
         waitUntil: 'load'
     });
