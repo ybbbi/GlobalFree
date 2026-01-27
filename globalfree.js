@@ -105,7 +105,6 @@ const checkInAndGetStatus = async (cookie) => {
         } else {
             console.info('checkIn 请求成功。');
             const { message } = await checkInRes.json();
-            console.log(message)
             ret[INFO.checkInMessage] = message;
         }
 
@@ -117,8 +116,6 @@ const checkInAndGetStatus = async (cookie) => {
         } else {
             console.info('getStatus 请求成功。');
             const { data: { email, phone, leftDays , traffic } = {} } = await statusRes.json();
-            console.log(data)
-            
             let account = '未知账号';
             if (email) {
                 account = email.replace(/^(.)(.*)(.@.*)$/,
