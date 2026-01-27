@@ -49,7 +49,7 @@ const rawCookie2JSON = (cookie) => {
             {
                 name,
                 value,
-                'domain': 'glados.rocks'
+                'domain': 'glados.cloud'
             }
         ];
     }, []);
