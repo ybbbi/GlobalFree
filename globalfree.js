@@ -62,22 +62,22 @@ const checkInAndGetStatus = async (cookie) => {
     const cookieJSON = rawCookie2JSON(cookie);
     await page.setCookie(...cookieJSON);
 
-    await page.goto('https://glados.rocks/console/checkin', {
-        timeout: 0,
-        waitUntil: 'load'
-    });
+    // await page.goto('https://glados.rocks/console/checkin', {
+    //     timeout: 0,
+    //     waitUntil: 'load'
+    // });
 
-    page.on('console', msg => {
-        if (console[msg.type()]) {
-            console[msg.type()](msg.text());
-        } else {
-            console.log(msg.text());
-        }
-    });
+    // page.on('console', msg => {
+    //     if (console[msg.type()]) {
+    //         console[msg.type()](msg.text());
+    //     } else {
+    //         console.log(msg.text());
+    //     }
+    // });
 
     const info = await page.evaluate(async (INFO) => {
         const checkIn = () =>
-            fetch('https://glados.rocks/api/user/checkin', {
+            fetch('https://glados.cloud/api/user/checkin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -90,7 +90,7 @@ const checkInAndGetStatus = async (cookie) => {
                 return { reason: '网络错误' }
             });
 
-        const getStatus = () => fetch('https://glados.rocks/api/user/status').catch(error => {
+        const getStatus = () => fetch('https://glados.cloud/api/user/status').catch(error => {
             console.warn('getStatus 网络错误。');
             return { reason: '网络错误' }
         });
