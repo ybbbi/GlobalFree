@@ -1,107 +1,126 @@
-name: globalfree
+name: auto check
+
 on:
-  # 可手动触发工作流程
   workflow_dispatch:
-  # push时触发工作流程
   push:
-    # 分支 现在默认是main，而不是master
-    branches: [ main ]
-    # 将工作流程配置为在至少一个文件不匹配paths-ignore的paths时运行
-    # 忽略README.md和imgs文件夹
+    branches: [ master ]
     paths-ignore:
       - 'README.md'
       - 'imgs/**'
-  # 定时触发工作流程
   schedule:
-    # UTC 17点36分(北京时间 1:36)
-    - cron: 36 17 * * *
-  # 标星时触发工作流程
-  watch:
-    types: [started]
+    - cron: '31 4,7,10 * * *'
+
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    steps:
-      # Checks out a copy of your repository on the ubuntu-latest machine
-      # 必须，不然到执行 node checkin.js 时会报错
-      - uses: actions/checkout@v2
-      - name: setup Node.js
-        # 理论上也可以自己命令行安装node
-        uses: actions/setup-node@v1
-        with:
-          node-version: '14.20.1'
-      - name: -i axios
-        run: npm install axios@1.1.3
-        # 安装 puppeteer-extra-plugin-stealth 绕过检测
-      - name: -i dependencies
-        run: npm install puppeteer@18.2.1 puppeteer-extra@3.3.4 puppeteer-extra-plugin-stealth@2.11.1
-      - name: run
-        run: node globalfree.js
-        # 设置环境变量
-        env:
-          PUSHPLUS: ${{ secrets.PUSHPLUS }}
-          COOKIES: ${{ secrets.COOKIES }}
-        # 保持 action 活跃
-      - name: keep alive action
-        uses: efrecon/gh-action-keepalive@main # using the workflow with default settings
-        # 删除工作流记录
-  cleanup:
-
-
+    name: glados/railgun checkin
     runs-on: ubuntu-latest
-
-
-    needs: build
-
-
+      
     permissions:
-
+      contents: read
       actions: write
 
+    strategy:
+      matrix:
+        python-version: [3.13]
+
+    # 这里加入全局环境变量，强制后续所有第三方 actions 兼容 Node.js 24 运行环境
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
+    - name: Checkout Code
+      uses: actions/checkout@v6
 
-
-    - name: 清理旧运行记录
-
-      uses: actions/github-script@v7
-
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
       with:
+        python-version: ${{ matrix.python-version }}
 
-        script: |
+    # 安装 python 库
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+        pip install pypushdeer
 
-          const runs = await github.rest.actions.listWorkflowRunsForRepo({
+    # 执行 签到脚本
+    - name: Running checkin
+      run: |
+        python checkin.py
+      env:
+        PUSHDEER_SENDKEY: ${{ secrets.PUSHDEER_SENDKEY }}
+        GLADOS_COOKIES: ${{ secrets.GLADOS_COOKIES }}
+        GLADOS_EXCHANGE_PLAN: ${{ secrets.GLADOS_EXCHANGE_PLAN }}
+        GLADOS_VERBOSE: ${{ secrets.GLADOS_VERBOSE }}
 
-            owner: context.repo.owner,
-
-            repo: context.repo.repo,
-
-            per_page: 100
-
-          });
-
-
-          const keep = 1;
-
-
-          const oldRuns = runs.data.workflow_runs.slice(keep);
-
-
-          for (const run of oldRuns) {
-
-            console.log(
-              `删除: ${run.id}`
-            );
+    - name: Keep alive
+      uses: liskin/gh-workflow-keepalive@v1 
+        
+    - name: Delete workflow runs
+      uses: Mattraks/delete-workflow-runs@v2
+      with:
+        token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        retain_days: 7
+        keep_minimum_runs: 7
+        delete_run_by_conclusion_pattern: success
+  # cleanup:
 
 
-            await github.rest.actions.deleteWorkflowRun({
+  #   runs-on: ubuntu-latest
 
-              owner: context.repo.owner,
 
-              repo: context.repo.repo,
+  #   needs: build
 
-              run_id: run.id
 
-            });
+  #   permissions:
 
-          }
+  #     actions: write
+
+
+  #   steps:
+
+
+  #   - name: 清理旧运行记录
+
+  #     uses: actions/github-script@v7
+
+  #     with:
+
+  #       script: |
+
+  #         const runs = await github.rest.actions.listWorkflowRunsForRepo({
+
+  #           owner: context.repo.owner,
+
+  #           repo: context.repo.repo,
+
+  #           per_page: 100
+
+  #         });
+
+
+  #         const keep = 1;
+
+
+  #         const oldRuns = runs.data.workflow_runs.slice(keep);
+
+
+  #         for (const run of oldRuns) {
+
+  #           console.log(
+  #             `删除: ${run.id}`
+  #           );
+
+
+  #           await github.rest.actions.deleteWorkflowRun({
+
+  #             owner: context.repo.owner,
+
+  #             repo: context.repo.repo,
+
+  #             run_id: run.id
+
+  #           });
+
+  #         }
