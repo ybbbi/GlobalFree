@@ -8,7 +8,7 @@ on:
       - 'README.md'
       - 'imgs/**'
   schedule:
-    - cron: '36 1 * * *'
+    - cron: '36 17 * * *'
 
 jobs:
   build:
