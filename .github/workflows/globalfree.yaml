@@ -56,71 +56,71 @@ jobs:
     - name: Keep alive
       uses: liskin/gh-workflow-keepalive@v1 
         
-    - name: Delete workflow runs
-      uses: Mattraks/delete-workflow-runs@v2
+    # - name: Delete workflow runs
+    #   uses: Mattraks/delete-workflow-runs@v2
+    #   with:
+    #     token: ${{ github.token }}
+    #     repository: ${{ github.repository }}
+    #     retain_days: 7
+    #     keep_minimum_runs: 7
+    #     delete_run_by_conclusion_pattern: success
+  cleanup:
+
+
+    runs-on: ubuntu-latest
+
+
+    needs: build
+
+
+    permissions:
+
+      actions: write
+
+
+    steps:
+
+
+    - name: 清理旧运行记录
+
+      uses: actions/github-script@v7
+
       with:
-        token: ${{ github.token }}
-        repository: ${{ github.repository }}
-        retain_days: 7
-        keep_minimum_runs: 7
-        delete_run_by_conclusion_pattern: success
-  # cleanup:
+
+        script: |
+
+          const runs = await github.rest.actions.listWorkflowRunsForRepo({
+
+            owner: context.repo.owner,
+
+            repo: context.repo.repo,
+
+            per_page: 100
+
+          });
 
 
-  #   runs-on: ubuntu-latest
+          const keep = 1;
 
 
-  #   needs: build
+          const oldRuns = runs.data.workflow_runs.slice(keep);
 
 
-  #   permissions:
+          for (const run of oldRuns) {
 
-  #     actions: write
-
-
-  #   steps:
-
-
-  #   - name: 清理旧运行记录
-
-  #     uses: actions/github-script@v7
-
-  #     with:
-
-  #       script: |
-
-  #         const runs = await github.rest.actions.listWorkflowRunsForRepo({
-
-  #           owner: context.repo.owner,
-
-  #           repo: context.repo.repo,
-
-  #           per_page: 100
-
-  #         });
+            console.log(
+              `删除: ${run.id}`
+            );
 
 
-  #         const keep = 1;
+            await github.rest.actions.deleteWorkflowRun({
 
+              owner: context.repo.owner,
 
-  #         const oldRuns = runs.data.workflow_runs.slice(keep);
+              repo: context.repo.repo,
 
+              run_id: run.id
 
-  #         for (const run of oldRuns) {
+            });
 
-  #           console.log(
-  #             `删除: ${run.id}`
-  #           );
-
-
-  #           await github.rest.actions.deleteWorkflowRun({
-
-  #             owner: context.repo.owner,
-
-  #             repo: context.repo.repo,
-
-  #             run_id: run.id
-
-  #           });
-
-  #         }
+          }
