@@ -2,6 +2,8 @@ import requests
 import json
 import os
 import logging
+import hashlib
+import time
 from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass, asdict
@@ -29,6 +31,7 @@ class APIEndpoint(Enum):
     """API端点"""
 
     CHECKIN = "/api/user/checkin"
+    CHALLENGE = "/api/user/checkin/challenge"
     STATUS = "/api/user/status"
     POINTS = "/api/user/points"
     EXCHANGE = "/api/user/exchange"
@@ -73,7 +76,7 @@ def log_method(func):
             logger.error(f"{LogEmoji.COOKIE}[{self.cookie_index}] {LogEmoji.DOMAIN}[{self.domain}] {LogEmoji.ERROR} {method_name} 执行失败: {e}")
 
             DEFAULT_ERRORS = {
-                "checkin": {"status": "签到失败", "points": "0", "message": ""},
+                "checkin": {"status": "签到失败", "points": "0", "message": "", "code": CheckinStatus.FAILURE},
                 "get_status": ("None 天", -2),
                 "get_points": ("None 积分", 0),
                 "exchange": "",
@@ -106,7 +109,7 @@ class Config:
     DEFAULT_VERBOSE = False
 
     """默认域名"""
-    DOMAINS = ["glados.cloud", "railgun.info"]
+    DOMAINS = ["glados.cloud"]
 
     """兑换计划列表"""
     EXCHANGE_PLANS = {
@@ -174,6 +177,9 @@ class API:
     """API 调用"""
 
     CHECKIN_URL = APIEndpoint.CHECKIN.value
+    CHALLENGE_URL = APIEndpoint.CHALLENGE.value
+    CHECKIN_MIN_WAIT = 2.5
+    CHECKIN_PROOF_SUFFIX = "glados-observe-v1"
     STATUS_URL = APIEndpoint.STATUS.value
     POINTS_URL = APIEndpoint.POINTS.value
     EXCHANGE_URL = APIEndpoint.EXCHANGE.value
@@ -231,14 +237,15 @@ class API:
         """获取完整 URL"""
         return f"https://{self.domain}{path}"
 
-    def _make_request(self, url: str, method: str, data: Optional[Dict] = None, cookies: str = "") -> Optional[requests.Response]:
+    def _make_request(self, url: str, method: str, data: Optional[Dict] = None, cookies: str = "", *, use_json: bool = False) -> Optional[requests.Response]:
         """发送 HTTP 请求"""
         session_headers = self.headers.copy()
         session_headers["cookie"] = cookies
 
         try:
             if method.upper() == "POST":
-                response = self.session.post(url, headers=session_headers, data=data, timeout=(60, 120))
+                payload = {"json": data} if use_json else {"data": data}
+                response = self.session.post(url, headers=session_headers, timeout=(60, 120), **payload)
             elif method.upper() == "GET":
                 response = self.session.get(url, headers=session_headers, timeout=(60, 120))
             else:
@@ -253,16 +260,34 @@ class API:
             self._log("error", LogEmoji.ERROR, f"向 {url} 发起请求时发生网络错误: {e}", force=True)
             return None
 
-    def _get_checkin_data(self) -> Dict[str, str]:
-        """获取签到数据"""
-        return {"token": self.domain}
+    def _get_checkin_data(self, cookies: str) -> Dict[str, str]:
+        """获取新挑战，按网页的等待时间和算法生成签到数据。"""
+        response = self._make_request(self._get_full_url(self.CHALLENGE_URL), "GET", cookies=cookies)
+        if response is None:
+            raise ValueError("获取签到 challenge 失败，未提交签到")
+
+        received_at = time.monotonic()
+        challenge = response.json()
+        nonce = challenge.get("nonce")
+        if challenge.get("code") != 0 or not isinstance(nonce, str) or not nonce:
+            raise ValueError(f"签到 challenge 无效: {challenge.get('message', '缺少有效 nonce')}")
+
+        ttl = float(challenge.get("ttl") or 300000) / 1000
+        remaining_wait = self.CHECKIN_MIN_WAIT - (time.monotonic() - received_at)
+        if remaining_wait > 0:
+            time.sleep(remaining_wait)
+        if time.monotonic() - received_at > ttl - 15:
+            raise ValueError("签到 challenge 已临近过期，未提交签到，请重新运行")
+
+        proof = hashlib.sha256(f"{nonce}.{self.CHECKIN_PROOF_SUFFIX}".encode("utf-8")).hexdigest()
+        return {"token": self.domain, "nonce": nonce, "proof": proof}
 
     @log_method
     def checkin(self, cookies: str) -> Dict[str, Union[str, CheckinStatus]]:
         """执行签到"""
         url = self._get_full_url(self.CHECKIN_URL)
-        checkin_data = self._get_checkin_data()
-        response = self._make_request(url, "POST", checkin_data, cookies)
+        checkin_data = self._get_checkin_data(cookies)
+        response = self._make_request(url, "POST", checkin_data, cookies, use_json=True)
 
         result = {
             "status": "签到失败",
@@ -276,6 +301,8 @@ class API:
             code = data.get("code", -2)
             message = data.get("message", "无消息字段")
             points = str(data.get("points", 0))
+            if code == 4 and data.get("reason") == "device-mismatch":
+                message = "签到设备与登录设备不一致，请在网页重新登录后更新 Cookie。" + str(message)
 
             if code == CheckinStatus.SUCCESS.value:
                 self._log("info", LogEmoji.SUCCESS, f"{{ code : {code}, points : {points}, message : {message} }}")
@@ -465,6 +492,7 @@ class Checker:
             self._log(cookie_idx, domain, LogEmoji.CHECKIN, "执行签到")
             checkin_result = api.checkin(cookie)
             result.status = checkin_result["status"]
+            result.points = checkin_result["points"]
             result.code = checkin_result.get("code", CheckinStatus.FAILURE)
 
             # 3. 获取积分
